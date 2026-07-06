@@ -41,11 +41,41 @@ in wenigen Klicks einstellen.
 Kosten: ca. 1–2 Cent pro erstellter Anzeige. Der Key wird nur lokal auf dem
 Gerät gespeichert (localStorage) und direkt an die Anthropic-API gesendet.
 
+## Chrome-Erweiterung für den PC (Autofill für Kleinanzeigen)
+
+Im Ordner [`extension/`](extension/) liegt eine Chrome-Erweiterung, die auf
+kleinanzeigen.de → „Anzeige aufgeben" ein kleines Panel einblendet und das
+Formular mit deinen Entwürfen ausfüllt (Titel, Beschreibung inkl. Rechtshinweis,
+Preis, VB, Fotos). **Sie sendet nie automatisch ab** – der „Anzeige
+aufgeben"-Klick bleibt bei dir.
+
+### Installation (einmalig)
+
+1. Dieses Repository als ZIP herunterladen (grüner **Code**-Button → *Download ZIP*) und entpacken
+2. In Chrome `chrome://extensions` öffnen
+3. Oben rechts **Entwicklermodus** aktivieren
+4. **„Entpackte Erweiterung laden"** → den entpackten Ordner `extension/` auswählen
+
+### Nutzung
+
+1. Verkaufsassistent-App **im selben Chrome** öffnen (dort synchronisiert die
+   Erweiterung deine Entwürfe automatisch, inkl. Fotos)
+2. kleinanzeigen.de → „Anzeige aufgeben" öffnen
+3. Unten rechts im Panel den Entwurf anklicken → Formular wird ausgefüllt
+4. Kategorie/Details prüfen, selbst auf „Anzeige aufgeben" klicken
+
+Falls Kleinanzeigen sein Formular umbaut und Felder nicht mehr gefüllt werden,
+zeigt das Panel das an (✗) und bietet Kopieren-Buttons als Fallback; die
+Selektoren stehen oben in `extension/content-ka.js` und lassen sich leicht
+nachpflegen.
+
 ## Hinweise
 
-- **Kleinanzeigen & eBay:** Das Einstellen selbst passiert manuell per
-  Kopieren/Teilen – Kleinanzeigen bietet keine öffentliche API, und ein
-  automatisches Ausfüllen per Skript verstößt gegen deren Nutzungsbedingungen.
-  Eine echte eBay-API-Anbindung (automatisches Einstellen) ist als Phase 2 geplant.
+- **Kleinanzeigen & eBay:** Kleinanzeigen bietet keine öffentliche API. Die
+  Chrome-Erweiterung füllt nur aus und sendet nie automatisch ab – trotzdem
+  bewegt sich automatisches Befüllen in einer Grauzone der
+  Kleinanzeigen-Nutzungsbedingungen; Nutzung auf eigenes Risiko, sparsam und
+  nur für eigene, geprüfte Anzeigen. Eine echte eBay-API-Anbindung
+  (automatisches Einstellen) ist als Phase 2 geplant.
 - Der KI-Preisvorschlag ist eine grobe Schätzung, kein Marktgutachten.
 - Der Privatverkaufs-Standardtext ist gängige Praxis, aber keine Rechtsberatung.

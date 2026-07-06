@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Verkaufsassistent Autofill",
+  "version": "1.0",
+  "description": "Füllt das Kleinanzeigen-Anzeigenformular automatisch mit deinen Verkaufsassistent-Entwürfen aus (inkl. Fotos). Kein automatisches Absenden.",
+  "permissions": ["storage", "unlimitedStorage"],
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://damian220587.github.io/*"],
+      "js": ["content-app.js"]
+    },
+    {
+      "matches": ["https://www.kleinanzeigen.de/*", "https://kleinanzeigen.de/*"],
+      "js": ["content-ka.js"],
+      "css": ["panel.css"]
+    }
+  ]
+}
