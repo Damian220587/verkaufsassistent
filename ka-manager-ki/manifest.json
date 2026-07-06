@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "KA Manager",
+  "version": "5.0.0",
+  "description": "Kleinanzeigen Inventar + KI: Anzeige aus Foto erstellen und automatisch einstellen",
+  "permissions": ["storage", "unlimitedStorage", "tabs", "scripting", "activeTab"],
+  "host_permissions": [
+    "https://*.kleinanzeigen.de/*",
+    "https://*.vinted.de/*",
+    "https://*.ebay.de/*",
+    "https://api.anthropic.com/*"
+  ],
+  "action": {
+    "default_icon": { "48": "assets/icon.png" },
+    "default_title": "KA Manager öffnen"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.kleinanzeigen.de/*"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.vinted.de/items/new*", "https://*.vinted.de/verkaufen*"],
+      "js": ["src/vinted.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.ebay.de/lstng*"],
+      "js": ["src/ebay.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": { "service_worker": "src/background.js" },
+  "web_accessible_resources": [{
+    "resources": ["dashboard.html", "dashboard.js", "ai-create.js"],
+    "matches": ["<all_urls>"]
+  }],
+  "icons": { "48": "assets/icon.png", "128": "assets/icon.png" }
+}

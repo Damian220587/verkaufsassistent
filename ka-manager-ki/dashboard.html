@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>KA Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f4f0;--card:#fff;--surf:#f0f0ec;--brd:#e4e4e0;
+  --txt:#18181b;--mut:#71717a;
+  --acc:#4f46e5;--accl:#eef2ff;--acch:#6366f1;
+  --grn:#059669;--grnl:#d1fae5;
+  --red:#dc2626;--redl:#fee2e2;
+  --r:9px;--sh:0 1px 3px rgba(0,0,0,.08);--shm:0 4px 16px rgba(0,0,0,.1);
+}
+html,body{height:100%;font-family:'Inter',system-ui;font-size:14px;color:var(--txt);background:var(--bg);overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+
+.nav{background:var(--card);border-bottom:1px solid var(--brd);padding:0 24px;height:52px;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:var(--sh);z-index:10}
+.nav-brand{display:flex;align-items:center;gap:9px}
+.nav-ico{width:31px;height:31px;border-radius:8px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:15px}
+.nav-name{font-size:15px;font-weight:800;letter-spacing:-.3px}
+.nav-sub{font-size:11px;color:var(--mut)}
+.nav-r{display:flex;align-items:center;gap:8px}
+
+.body{display:flex;flex:1;overflow:hidden}
+.left{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+.stats{background:var(--card);border-bottom:1px solid var(--brd);padding:9px 24px;display:flex;align-items:center;gap:18px;flex-shrink:0}
+.stat{display:flex;align-items:baseline;gap:5px}
+.sn{font-size:20px;font-weight:800;line-height:1}
+.sl{font-size:11px;font-weight:600;color:var(--mut)}
+.sdiv{width:1px;height:20px;background:var(--brd)}
+
+/* Queue bar */
+.qbar{display:none;background:var(--acc);color:#fff;padding:7px 24px;align-items:center;gap:12px;font-size:13px;font-weight:600;flex-shrink:0}
+.qbar.on{display:flex}
+.qprog{flex:1;height:4px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden}
+.qfill{height:100%;background:#fff;border-radius:2px;transition:width .4s}
+
+.toolbar{padding:12px 24px 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.sw{flex:1;min-width:180px;position:relative}
+.sico{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:13px}
+.sinp{width:100%;padding:7px 10px 7px 30px;background:var(--card);border:1px solid var(--brd);
+  border-radius:7px;font:inherit;color:var(--txt);outline:none;box-shadow:var(--sh)}
+.sinp:focus{border-color:var(--acc)}
+.sinp::placeholder{color:var(--mut)}
+select.sf{padding:7px 10px;background:var(--card);border:1px solid var(--brd);border-radius:7px;font:inherit;color:var(--txt);outline:none;box-shadow:var(--sh);cursor:pointer}
+
+.selbar{display:none;background:var(--acc);color:#fff;border-radius:8px;padding:7px 14px;align-items:center;gap:9px;font-size:13px;font-weight:600;margin:0 24px 8px;flex-shrink:0}
+.selbar.on{display:flex}
+.sbb{padding:5px 11px;border-radius:6px;font:600 12px Inter;cursor:pointer;border:none;transition:background .15s}
+.sbgo{background:#fff;color:var(--acc)}.sbgo:hover{background:#e0e7ff}
+.sbdel{background:rgba(255,255,255,.18);color:#fff}.sbdel:hover{background:rgba(255,255,255,.28)}
+.sbclr{background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:12px;margin-left:auto}
+
+.grid-wrap{flex:1;overflow-y:auto;padding:0 24px 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+
+/* Card */
+.card{background:var(--card);border:1.5px solid var(--brd);border-radius:var(--r);overflow:hidden;
+  transition:border-color .15s,box-shadow .15s;box-shadow:var(--sh);cursor:pointer;position:relative;display:flex;flex-direction:column}
+.card:hover{border-color:#a5b4fc;box-shadow:var(--shm)}
+.card.sel{border-color:var(--acc);box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+.card.sel .ckb{background:var(--acc);border-color:var(--acc)}
+.card.sel .ckb::after{content:'✓';color:#fff;font-size:10px;font-weight:800}
+.card.active{border-color:var(--acc)}
+.ckb{position:absolute;top:8px;left:8px;width:18px;height:18px;border-radius:4px;border:2px solid rgba(255,255,255,.9);
+  background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;transition:all .15s;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.card:hover .ckb{border-color:var(--acc);background:#fff}
+
+.card-img{width:100%;height:170px;background:var(--surf);overflow:hidden;position:relative;flex-shrink:0}
+.card-img img{width:100%;height:100%;object-fit:cover;transition:transform .2s;image-rendering:-webkit-optimize-contrast}
+.card:hover .card-img img{transform:scale(1.04)}
+.card-no-img{width:100%;height:145px;background:var(--surf);display:flex;align-items:center;justify-content:center;font-size:38px;color:var(--mut);flex-shrink:0}
+.img-cnt{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;padding:2px 6px;border-radius:12px}
+
+.card-body{padding:10px 12px 8px;flex:1}
+.card-title{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-price{font-size:16px;font-weight:800;color:var(--acc);margin-bottom:3px}
+.card-meta{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font-size:11px;font-weight:500;padding:2px 7px;border-radius:20px;border:1px solid var(--brd);background:var(--surf);color:var(--mut);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.chip.cat{background:var(--accl);color:var(--acc);border-color:#c7d2fe}
+
+.card-foot{border-top:1px solid var(--brd);padding:7px 12px;display:flex;align-items:center;gap:5px;background:#fafaf8}
+.card-date{font-size:11px;color:var(--mut);flex:1}
+
+/* Status overlay */
+.cso{display:none;position:absolute;inset:0;background:rgba(255,255,255,.93);align-items:center;justify-content:center;flex-direction:column;gap:6px;z-index:5;border-radius:var(--r)}
+.cso.on{display:flex}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:24px;height:24px;border:2px solid rgba(79,70,229,.3);border-top-color:var(--acc);border-radius:50%;animation:spin .6s linear infinite}
+.cst{font-size:12px;font-weight:600;text-align:center;padding:0 12px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:7px;font:600 13px Inter;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;box-shadow:var(--sh)}
+.bp{background:var(--acc);color:#fff}.bp:hover:not(:disabled){background:var(--acch)}
+.bg{background:var(--grn);color:#fff}.bg:hover:not(:disabled){background:#047857}
+.bo{background:var(--card);color:var(--txt);border:1px solid var(--brd)}.bo:hover:not(:disabled){background:var(--surf)}
+.br{background:var(--redl);color:var(--red);border:1px solid #fca5a5}.br:hover:not(:disabled){background:#fecaca}
+.bsm{padding:5px 9px;font-size:12px;border-radius:6px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Empty */
+.empty{grid-column:1/-1;text-align:center;padding:72px 20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.empty-ico{font-size:52px;opacity:.2}
+.empty-ttl{font-size:19px;font-weight:700}
+.empty-sub{color:var(--mut);font-size:13px;line-height:1.6;max-width:280px}
+
+/* RIGHT PANEL */
+.panel{width:420px;flex-shrink:0;background:var(--card);border-left:1px solid var(--brd);display:flex;flex-direction:column;transition:width .2s;overflow:hidden}
+.panel.hidden{width:0;border-left:none}
+.ph{padding:14px 16px 12px;border-bottom:1px solid var(--brd);display:flex;align-items:flex-start;gap:8px;flex-shrink:0}
+.ph-title{font-size:14px;font-weight:700;flex:1;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ph-close{background:none;border:none;cursor:pointer;font-size:17px;color:var(--mut);padding:2px}
+
+.panel-imgs{display:flex;gap:4px;padding:10px 16px 0;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.panel-imgs:empty{display:none}
+.pimg{width:58px;height:58px;border-radius:6px;object-fit:cover;border:1px solid var(--brd);flex-shrink:0;cursor:pointer}
+.pimg:hover{opacity:.8}
+
+.pb{flex:1;overflow-y:auto;padding:12px 16px}
+.pb::-webkit-scrollbar{width:4px}
+.pb::-webkit-scrollbar-thumb{background:var(--brd);border-radius:2px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.field input,.field textarea{width:100%;padding:7px 9px;background:var(--surf);border:1px solid var(--brd);border-radius:6px;font:inherit;color:var(--txt);outline:none;resize:vertical;transition:border-color .15s}
+.field input:focus,.field textarea:focus{border-color:var(--acc);background:#fff}
+.field textarea{min-height:80px;line-height:1.5}
+.cat-path{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px 9px;background:var(--surf);border:1px solid var(--brd);border-radius:6px;min-height:34px}
+.cat-s{font-size:11px;font-weight:600;color:var(--acc);background:var(--accl);padding:2px 6px;border-radius:4px}
+.cat-sep{color:var(--mut);font-size:11px}
+
+.pf{padding:10px 16px;border-top:1px solid var(--brd);display:flex;gap:7px;flex-shrink:0;background:var(--card)}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.35);align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--card);border-radius:14px;padding:28px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 56px rgba(0,0,0,.2);animation:mIn .2s ease}
+@keyframes mIn{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+.m-ico{font-size:46px;margin-bottom:10px}
+.m-ttl{font-size:18px;font-weight:800;margin-bottom:6px}
+.m-msg{font-size:13px;color:var(--mut);line-height:1.6;margin-bottom:16px}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--brd);border-radius:3px}
+
+/* ── ORDNER ─────────────────────────────────────────────────── */
+.sidebar{width:200px;min-width:140px;max-width:400px;flex-shrink:0;background:var(--card);border-right:1px solid var(--brd);
+  display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sidebar-head{padding:10px 14px 6px;font-size:11px;font-weight:700;color:var(--mut);
+  text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
+.add-folder-btn{background:none;border:none;cursor:pointer;font-size:16px;color:var(--acc);
+  padding:0;line-height:1;transition:transform .15s}
+.add-folder-btn:hover{transform:scale(1.2)}
+.folder-list{flex:1;overflow-y:auto;padding:4px 8px 8px}
+.folder-item{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:7px;
+  cursor:pointer;transition:background .12s;position:relative;user-select:none}
+.folder-item:hover{background:var(--surf)}
+.folder-item.active{background:var(--accl);color:var(--acc)}
+.folder-item.active .folder-icon{filter:none}
+.folder-icon{font-size:15px;flex-shrink:0}
+.folder-name{font-size:13px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folder-count{font-size:11px;font-weight:600;color:var(--mut);flex-shrink:0}
+.folder-item.active .folder-count{color:var(--acc)}
+.folder-del{display:none;background:none;border:none;cursor:pointer;font-size:12px;
+  color:var(--red);padding:1px 4px;border-radius:4px;flex-shrink:0}
+.folder-item:hover .folder-del{display:block}
+.folder-item.active .folder-del{display:block}
+/* Resize-Handle */
+.sidebar-resize{position:absolute;top:0;right:-3px;width:6px;height:100%;cursor:col-resize;z-index:20;background:transparent}
+.sidebar-resize:hover,.sidebar-resize.dragging{background:var(--acc);opacity:.3}
+
+/* Ordner-Modal */
+.fmodal-bg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.3);
+  align-items:center;justify-content:center}
+.fmodal-bg.on{display:flex}
+.fmodal{background:var(--card);border-radius:12px;padding:24px;width:320px;
+  box-shadow:0 12px 40px rgba(0,0,0,.2);animation:mIn .18s ease}
+.fmodal-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.fmodal input{width:100%;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;
+  font:inherit;color:var(--txt);background:var(--surf);outline:none;margin-bottom:12px}
+.fmodal input:focus{border-color:var(--acc);background:#fff}
+.fmodal-btns{display:flex;gap:8px;justify-content:flex-end}
+
+/* Verschieben-Modal (zentral) */
+.move-modal-bg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.35);
+  align-items:center;justify-content:center}
+.move-modal-bg.on{display:flex}
+.move-modal{background:var(--card);border-radius:12px;padding:0;width:340px;max-width:95vw;
+  box-shadow:0 12px 40px rgba(0,0,0,.2);animation:mIn .18s ease;overflow:hidden}
+.move-modal-head{padding:16px 18px 12px;border-bottom:1px solid var(--brd);
+  display:flex;align-items:center;justify-content:space-between}
+.move-modal-title{font-size:15px;font-weight:700}
+.move-modal-close{background:none;border:none;cursor:pointer;font-size:18px;color:var(--mut);padding:2px}
+.move-modal-list{padding:8px;max-height:340px;overflow-y:auto}
+.move-modal-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
+  cursor:pointer;font-size:13px;font-weight:500;transition:background .12s}
+.move-modal-item:hover{background:var(--surf)}
+.move-modal-item.active-folder{background:var(--accl);color:var(--acc);font-weight:600}
+
+/* ── KI-ERSTELLEN / EINSTELLUNGEN MODAL ─────────────────────── */
+.ai-modal-bg{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);
+  align-items:center;justify-content:center;padding:20px}
+.ai-modal-bg.on{display:flex}
+.ai-modal{background:var(--card);border-radius:14px;width:640px;max-width:100%;max-height:92vh;
+  display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:mIn .18s ease;overflow:hidden}
+.ai-modal-head{padding:16px 20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-modal-title{font-size:16px;font-weight:800}
+.ai-modal-body{padding:16px 20px;overflow-y:auto;flex:1}
+.ai-modal-foot{padding:12px 20px;border-top:1px solid var(--brd);display:flex;gap:8px;flex-shrink:0}
+.ai-inp{width:100%;padding:8px 10px;background:var(--surf);border:1px solid var(--brd);border-radius:7px;
+  font:inherit;color:var(--txt);outline:none;resize:vertical}
+.ai-inp:focus{border-color:var(--acc);background:#fff}
+select.ai-inp{cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2371717a' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ai-drop{border:1.5px dashed var(--brd);border-radius:12px;padding:22px;text-align:center;cursor:pointer;
+  position:relative;transition:all .15s;margin-bottom:10px;background:var(--surf)}
+.ai-drop.drag{border-color:var(--acc);background:var(--accl)}
+.ai-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:0}
+.ai-drop-ico{font-size:30px;margin-bottom:6px}
+.ai-drop-ttl{font-weight:700;font-size:14px;margin-bottom:3px}
+.ai-drop-sub{font-size:12px;color:var(--mut);line-height:1.5}
+.ai-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-bottom:12px}
+.ai-thumbs:empty{display:none}
+.ai-th{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--brd)}
+.ai-th img{width:100%;height:100%;object-fit:cover}
+.ai-th .del{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;
+  background:rgba(0,0,0,.6);color:#fff;border:none;font-size:10px;cursor:pointer;line-height:1}
+.ai-checks{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0}
+.ai-chk{display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;user-select:none}
+.ai-chk input{width:16px;height:16px;accent-color:var(--acc);cursor:pointer}
+.ai-alert{display:none;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;margin-bottom:12px}
+.ai-alert.on{display:block}
+.ai-alert.err{background:var(--redl);color:var(--red);border:1px solid #fca5a5}
+.ai-alert.ok{background:var(--grnl);color:var(--grn);border:1px solid #6ee7b7}
+.ai-result{display:none;margin-top:6px}
+.ai-result.on{display:block}
+.ai-sep{font-size:11px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.5px;
+  margin:14px 0 10px;padding-top:12px;border-top:1px solid var(--brd)}
+.ai-warn{background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.6;margin-bottom:10px}
+.ai-warn ul{margin:5px 0 0 16px}
+.ai-price{display:flex;align-items:center;gap:10px;background:var(--accl);border:1px solid #c7d2fe;
+  border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:12px;color:var(--mut)}
+.ai-price-val{font-size:16px;font-weight:800;color:var(--acc)}
+.ai-cnt{font-weight:500;color:var(--mut);text-transform:none;letter-spacing:0}
+.ai-cnt.over{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-ico">📋</div>
+    <div><div class="nav-name">KA Manager</div><div class="nav-sub">Kleinanzeigen Inventar</div></div>
+  </div>
+  <div class="nav-r">
+    <button class="btn bp bsm" id="aiCreateBtn">✨ Neue Anzeige aus Foto</button>
+    <button class="btn bo bsm" id="settingsBtn" title="Einstellungen">⚙</button>
+    <button class="btn bo bsm" id="refreshBtn">↺</button>
+    <button class="btn br bsm" id="clearAllBtn">🗑 Alles löschen</button>
+  </div>
+</nav>
+
+<div class="body">
+
+<!-- ORDNER-SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-resize" id="sidebarResize"></div>
+  <div class="sidebar-head">
+    <span>Ordner</span>
+    <button class="add-folder-btn" id="addFolderBtn" title="Neuer Ordner">＋</button>
+  </div>
+  <div style="font-size:10px;color:var(--mut);padding:0 14px 6px;line-height:1.4">Doppelklick zum Umbenennen</div>
+  <div class="folder-list" id="folderList"></div>
+</div>
+
+<div class="left">
+  <div class="stats">
+    <div class="stat"><span class="sn" id="sTotal">0</span><span class="sl">Anzeigen</span></div>
+    <div class="sdiv"></div>
+    <div class="stat"><span class="sn" id="sSel">0</span><span class="sl">Ausgewählt</span></div>
+    <div class="sdiv"></div>
+    <div class="stat"><span class="sn" id="sImg">0</span><span class="sl">Mit Bildern</span></div>
+  </div>
+  <div class="qbar" id="qbar">
+    <span id="qLabel">⚡ Wird eingestellt…</span>
+    <div class="qprog"><div class="qfill" id="qFill" style="width:0%"></div></div>
+    <button class="btn bo bsm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" id="qStop">✕</button>
+  </div>
+  <div class="toolbar">
+    <div class="sw"><span class="sico">🔍</span><input class="sinp" id="search" placeholder="Anzeigen suchen…"></div>
+    <select class="sf" id="sortSel">
+      <option value="newest">Neueste zuerst</option>
+      <option value="oldest">Älteste zuerst</option>
+      <option value="price-desc">Preis ↓</option>
+      <option value="price-asc">Preis ↑</option>
+      <option value="az">A → Z</option>
+    </select>
+    <button class="btn bo bsm" id="selAllBtn">☐ Alle</button>
+  </div>
+  <div class="selbar" id="selbar">
+    <span id="selCount">0 ausgewählt</span>
+    <button class="sbb sbgo" id="repostSelBtn">⚡ Alle einstellen</button>
+    <button class="sbb sbgo" id="moveSelBtn" style="background:#e0e7ff;color:var(--acc)">📁 Verschieben</button>
+    <button class="sbb sbdel" id="delSelBtn">✕ Löschen</button>
+    <button class="sbclr" id="clearSelBtn">✕ Aufheben</button>
+  </div>
+  <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+</div>
+
+<!-- EDIT PANEL -->
+<div class="panel hidden" id="panel">
+  <div class="ph">
+    <div class="ph-title" id="panelTitle">Anzeige</div>
+    <button class="ph-close" id="panelClose">✕</button>
+  </div>
+  <div class="panel-imgs" id="panelImgs"></div>
+  <div class="pb">
+    <div class="field"><label>Titel</label><input id="eTitle" type="text" maxlength="65"></div>
+    <div class="field"><label>Preis (€)</label><input id="ePrice" type="text" placeholder="z.B. 25"></div>
+    <div class="field"><label>Beschreibung</label><textarea id="eDesc" rows="6"></textarea></div>
+    <div class="field"><label>Standort / PLZ</label><input id="eLoc" type="text"></div>
+    <div class="field">
+      <label>Kategorie-Pfad</label>
+      <div class="cat-path" id="eCatDisplay"></div>
+      <input id="eCatInput" type="text" placeholder="z.B. Familie, Kind & Baby, Spielzeug" style="margin-top:5px;font-size:12px">
+      <div style="font-size:11px;color:var(--mut);margin-top:3px">Kommagetrennt · wird beim Einstellen automatisch ausgewählt</div>
+    </div>
+    <div class="field"><label>Link</label><a id="eUrl" href="#" target="_blank" style="color:var(--acc);font-size:13px">Original öffnen →</a></div>
+  </div>
+  <div class="pf">
+    <button class="btn bp" id="panelRepost" style="flex:2">⚡ Jetzt einstellen</button>
+    <button class="btn bo" id="panelSave" style="flex:1">💾 Speichern</button>
+    <button class="btn br bsm" id="panelDel">🗑</button>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ORDNER ERSTELLEN MODAL -->
+<div class="fmodal-bg" id="fmodalBg">
+  <div class="fmodal">
+    <div class="fmodal-title">📁 Neuer Ordner</div>
+    <input id="fmodalInput" type="text" placeholder="Ordner-Name…" maxlength="40">
+    <div class="fmodal-btns">
+      <button class="btn bo bsm" id="fmodalCancel">Abbrechen</button>
+      <button class="btn bp bsm" id="fmodalOk">Erstellen</button>
+    </div>
+  </div>
+</div>
+
+<!-- VERSCHIEBEN MODAL -->
+<div class="move-modal-bg" id="moveModalBg">
+  <div class="move-modal">
+    <div class="move-modal-head">
+      <div class="move-modal-title">📁 In Ordner verschieben</div>
+      <button class="move-modal-close" id="moveModalClose">✕</button>
+    </div>
+    <div class="move-modal-list" id="moveModalList"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="m-ico" id="mIco"></div>
+    <div class="m-ttl" id="mTtl"></div>
+    <div class="m-msg" id="mMsg"></div>
+    <button class="btn bp" id="mClose" style="width:100%;justify-content:center">OK</button>
+  </div>
+</div>
+
+<!-- ══════════ KI-ERSTELLEN MODAL ══════════ -->
+<div class="ai-modal-bg" id="aiModalBg">
+  <div class="ai-modal">
+    <div class="ai-modal-head">
+      <div class="ai-modal-title">✨ Neue Anzeige aus Foto</div>
+      <button class="move-modal-close" id="aiModalClose">✕</button>
+    </div>
+    <div class="ai-modal-body" id="aiModalBody">
+
+      <div class="ai-alert" id="aiAlert"></div>
+
+      <!-- Foto-Upload -->
+      <div class="ai-drop" id="aiDrop">
+        <input type="file" accept="image/*" multiple id="aiFileInput">
+        <div class="ai-drop-ico">📸</div>
+        <div class="ai-drop-ttl">Fotos hierher ziehen oder klicken</div>
+        <div class="ai-drop-sub">Bis zu 10 Fotos – je mehr Winkel, desto besser erkennt die KI dein Produkt</div>
+      </div>
+      <div class="ai-thumbs" id="aiThumbs"></div>
+
+      <!-- Angaben -->
+      <div class="ai-grid">
+        <div class="field">
+          <label>Zustand</label>
+          <select id="aiZustand" class="ai-inp">
+            <option value="">KI soll einschätzen</option>
+            <option>Neu (originalverpackt)</option>
+            <option>Wie neu</option>
+            <option>Sehr gut</option>
+            <option>Gut</option>
+            <option>Gebraucht / in Ordnung</option>
+            <option>Defekt / für Bastler</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Marke / Modell</label>
+          <input id="aiMarke" class="ai-inp" type="text" placeholder="leer = KI erkennt">
+        </div>
+        <div class="field">
+          <label>Kategorie (Text)</label>
+          <input id="aiKategorie" class="ai-inp" type="text" placeholder="z.B. Werkzeug">
+        </div>
+        <div class="field">
+          <label>Maße / Größe</label>
+          <input id="aiGroesse" class="ai-inp" type="text" placeholder="z.B. Gr. M">
+        </div>
+        <div class="field">
+          <label>Preis (€)</label>
+          <input id="aiPreis" class="ai-inp" type="number" min="0" step="0.5" placeholder="leer = KI schlägt vor">
+        </div>
+        <div class="field">
+          <label>PLZ</label>
+          <input id="aiPlz" class="ai-inp" type="text" inputmode="numeric" placeholder="z.B. 59558">
+        </div>
+      </div>
+
+      <div class="ai-checks">
+        <label class="ai-chk"><input type="checkbox" id="aiVB" checked> VB (Verhandlungsbasis)</label>
+        <label class="ai-chk"><input type="checkbox" id="aiVersand"> Versand möglich</label>
+        <label class="ai-chk"><input type="checkbox" id="aiAbholung" checked> Abholung</label>
+      </div>
+
+      <div class="field">
+        <label>Besonderheiten / Mängel (für eine ehrliche Anzeige)</label>
+        <textarea id="aiNotizen" class="ai-inp" rows="2" placeholder="z.B. kleiner Kratzer am Deckel, 2. Akku dabei, Rechnung vorhanden…"></textarea>
+      </div>
+
+      <label class="ai-chk" style="border-top:1px solid var(--brd);padding-top:10px;margin-top:2px">
+        <input type="checkbox" id="aiLegal" checked> Privatverkaufs-Hinweis ans Ende anhängen
+      </label>
+
+      <!-- Ergebnis -->
+      <div class="ai-result" id="aiResult">
+        <div class="ai-sep">Vorschau – bitte prüfen &amp; anpassen</div>
+        <div class="ai-warn" id="aiUncertain" style="display:none">
+          ⚠️ <b>Das konnte die KI nicht sicher erkennen – bitte prüfen:</b>
+          <ul id="aiUncertainList"></ul>
+        </div>
+        <div class="ai-price" id="aiPriceBox" style="display:none">
+          <span class="ai-price-val" id="aiPriceVal"></span>
+          <span>KI-Preisvorschlag · <i>unverbindliche Schätzung</i></span>
+        </div>
+        <div class="field">
+          <label>Titel Kleinanzeigen <span id="aiCntKA" class="ai-cnt"></span></label>
+          <input id="aiRTitelKA" class="ai-inp" type="text">
+        </div>
+        <div class="field">
+          <label>Titel eBay <span id="aiCntEB" class="ai-cnt"></span></label>
+          <input id="aiRTitelEB" class="ai-inp" type="text">
+        </div>
+        <div class="field">
+          <label>Beschreibung</label>
+          <textarea id="aiRDesc" class="ai-inp" rows="7"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="ai-modal-foot">
+      <button class="btn bp" id="aiGenBtn" style="flex:1;justify-content:center">✨ Anzeige erstellen</button>
+      <button class="btn bg" id="aiSaveBtn" style="flex:1;justify-content:center;display:none">💾 Ins Inventar speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ EINSTELLUNGEN MODAL ══════════ -->
+<div class="ai-modal-bg" id="setModalBg">
+  <div class="ai-modal" style="max-width:440px">
+    <div class="ai-modal-head">
+      <div class="ai-modal-title">⚙ Einstellungen</div>
+      <button class="move-modal-close" id="setModalClose">✕</button>
+    </div>
+    <div class="ai-modal-body">
+      <div class="ai-alert" id="setAlert"></div>
+      <div class="field">
+        <label>Claude API Key (Anthropic)</label>
+        <input id="setKey" class="ai-inp" type="password" placeholder="sk-ant-..." autocomplete="off">
+        <div id="setKeyStatus" style="font-size:11px;margin-top:4px"></div>
+        <div style="font-size:11px;color:var(--mut);line-height:1.6;margin-top:6px">
+          Key holen auf <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--acc)">console.anthropic.com</a>
+          → „Create Key". Kosten ca. 1–2 Cent pro Anzeige. Bleibt nur auf deinem Gerät.
+        </div>
+      </div>
+      <div class="field">
+        <label>Rechtstext Privatverkauf</label>
+        <textarea id="setLegal" class="ai-inp" rows="3"></textarea>
+      </div>
+      <div class="field">
+        <label>Standard-PLZ</label>
+        <input id="setPlz" class="ai-inp" type="text" inputmode="numeric" placeholder="z.B. 59558">
+      </div>
+    </div>
+    <div class="ai-modal-foot">
+      <button class="btn bp" id="setSaveBtn" style="flex:1;justify-content:center">💾 Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script src="ai-create.js"></script>
+</body>
+</html>
