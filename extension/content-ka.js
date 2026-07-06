@@ -104,6 +104,8 @@
   }
 
   function build(data) {
+    var old = document.getElementById('va-ext-panel');
+    if (old) old.remove();
     var listings = data.va_listings || [];
     var panel = document.createElement('div');
     panel.id = 'va-ext-panel';
@@ -157,5 +159,13 @@
     });
   }
 
-  chrome.storage.local.get(['va_listings', 'va_photos', 'va_legal'], build);
+  function refresh() {
+    chrome.storage.local.get(['va_listings', 'va_photos', 'va_legal'], build);
+  }
+  refresh();
+
+  // Panel automatisch aktualisieren, sobald die App neue Entwürfe synct
+  chrome.storage.onChanged.addListener(function(changes, area) {
+    if (area === 'local' && (changes.va_listings || changes.va_photos || changes.va_legal)) refresh();
+  });
 })();
