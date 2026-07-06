@@ -19,6 +19,46 @@ async function fetchImageBase64(url) {
   } catch { return null; }
 }
 
+// ── Formulardaten (Kategorie/PLZ etc.) der Bearbeiten-Seite robust laden ──
+// Kleinanzeigen ändert Seitenstruktur/URL gelegentlich. Wir probieren mehrere
+// URLs + Formular-Selektoren und werfen KEINEN Fehler mehr, wenn nichts passt –
+// dann wird nur ohne categoryId gespeichert (Titel/Preis/Bilder kommen separat
+// von der Detailseite). Rückgabe: { formData, found }.
+async function kaFetchFormData(adId) {
+  const urls = [
+    `${KA_BASE}/p-anzeige-bearbeiten.html?adId=${adId}`,
+    `${KA_BASE}/p-anzeige-bearbeiten.html?adId=${adId}&_ready=true`,
+    `${KA_BASE}/p-anzeige-bearbeiten/${adId}`
+  ];
+  const formSel = ['#adForm', 'form[name="adForm"]', 'form[id*="adForm" i]',
+                   'form[action*="anzeige-bearbeiten" i]', 'form[action*="postad" i]',
+                   'form[action*="p-anzeige" i]'];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { credentials: 'include' });
+      if (!r.ok) continue;
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      let form = null;
+      for (const s of formSel) { form = doc.querySelector(s); if (form && form.elements && form.elements.length) break; form = null; }
+      if (!form) continue;
+      const fd = {};
+      for (const el of form.elements) {
+        if (!el.name || el.disabled) continue;
+        if (['submit','reset','button','image','file'].includes(el.type)) continue;
+        if ((el.type === 'radio' || el.type === 'checkbox') && !el.checked) continue;
+        fd[el.name] = el.value;
+      }
+      // Fallback categoryId aus verstecktem Feld/Data-Attribut
+      if (!fd.categoryId) {
+        const c = doc.querySelector('[name="categoryId"], #postad-category-path-id, [data-category-id]');
+        if (c) fd.categoryId = c.value || c.getAttribute('data-category-id') || '';
+      }
+      return { formData: fd, found: true };
+    } catch (e) { /* nächste URL probieren */ }
+  }
+  return { formData: {}, found: false };
+}
+
 // ── Alle Formulardaten der aktuellen Anzeige lesen ─────────────────────────
 function scrapeFormData() {
   const form = document.getElementById('adForm');
@@ -246,20 +286,8 @@ function injectMyAdsButtons() {
       saveBtn.innerHTML = '⏳ Lade…';
 
       try {
-        // Schritt 1: Formulardaten (Kategorie, PLZ etc.) von Edit-Seite holen
-        const editR   = await fetch(`${KA_BASE}/p-anzeige-bearbeiten.html?adId=${adId}`);
-        const editHtml = await editR.text();
-        const editDoc  = new DOMParser().parseFromString(editHtml, 'text/html');
-        const form     = editDoc.getElementById('adForm');
-        if (!form) throw new Error('Formular nicht gefunden');
-
-        const formData = {};
-        for (const el of form.elements) {
-          if (!el.name || el.disabled) continue;
-          if (['submit','reset','button','image','file'].includes(el.type)) continue;
-          if ((el.type === 'radio' || el.type === 'checkbox') && !el.checked) continue;
-          formData[el.name] = el.value;
-        }
+        // Schritt 1: Formulardaten (Kategorie, PLZ etc.) von Edit-Seite holen (robust, kein Abbruch)
+        const { formData, found: formFound } = await kaFetchFormData(adId);
 
         // Schritt 2: Detailseite für XL-Bilder, korrekten Preis & Beschreibung laden
         saveBtn.innerHTML = '⏳ Bilder…';
@@ -337,8 +365,11 @@ function injectMyAdsButtons() {
 
         if (formData.categoryId) ad.categoryId = formData.categoryId;
 
+        if (!title) throw new Error('Anzeige konnte nicht gelesen werden (evtl. nicht eingeloggt?)');
         await chrome.runtime.sendMessage({ action: 'saveAd', ad });
-        toast(`✅ <b>${ad.title.slice(0, 40)}</b> im Inventar gespeichert!`);
+        toast(formFound
+          ? `✅ <b>${ad.title.slice(0, 40)}</b> im Inventar gespeichert!`
+          : `✅ <b>${ad.title.slice(0, 40)}</b> gespeichert – aber ohne Kategorie (KA-Bearbeitungsseite nicht lesbar). Für 1-Klick-Neueinstellen bitte Kategorie im Dashboard ergänzen.`, formFound ? 'ok' : 'warn', formFound ? 5000 : 8000);
         saveBtn.innerHTML = '✅';
         saveBtn.style.background = '#059669';
         setTimeout(() => {
@@ -508,19 +539,8 @@ function injectDeleteCheckboxes() {
       let ok = 0, fail = 0;
       for (const adId of ids) {
         try {
-          // Formulardaten von Edit-Seite
-          const editR = await fetch(`${KA_BASE}/p-anzeige-bearbeiten.html?adId=${adId}`);
-          const editHtml = await editR.text();
-          const editDoc = new DOMParser().parseFromString(editHtml, 'text/html');
-          const form = editDoc.getElementById('adForm');
-          if (!form) throw new Error('Formular nicht gefunden');
-          const formData = {};
-          for (const el of form.elements) {
-            if (!el.name || el.disabled) continue;
-            if (['submit','reset','button','image','file'].includes(el.type)) continue;
-            if ((el.type === 'radio' || el.type === 'checkbox') && !el.checked) continue;
-            formData[el.name] = el.value;
-          }
+          // Formulardaten von Edit-Seite (robust, kein Abbruch)
+          const { formData } = await kaFetchFormData(adId);
           // Detailseite für Preis, Bilder, Beschreibung
           const detailR = await fetch(`${KA_BASE}/s-anzeige/anzeige/${adId}`);
           const detailHtml = await detailR.text();
@@ -562,6 +582,7 @@ function injectDeleteCheckboxes() {
             url: `${KA_BASE}/s-anzeige/anzeige/${adId}`, savedAt: new Date().toISOString(),
           };
           if (formData.categoryId) ad.categoryId = formData.categoryId;
+          if (!title) throw new Error('Anzeige nicht lesbar');
           await chrome.runtime.sendMessage({action:'saveAd', ad});
           ok++;
         } catch(e) {

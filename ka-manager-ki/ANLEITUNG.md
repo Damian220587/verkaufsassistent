@@ -57,6 +57,25 @@ konnte ich nicht testen. Bitte einmal durchspielen:
 Falls ein Feld leergeblieben ist, sag mir welches – die Feld-Erkennung (Selektoren)
 steht oben in `src/content.js` und lässt sich schnell nachziehen.
 
+## Bekanntes Thema: „Formular nicht gefunden" beim Speichern
+
+Kleinanzeigen hat seine **Bearbeiten-Seite umgebaut**, dort fehlt das alte
+Formular (`#adForm`). Deshalb kann beim „📥 Speichern" einer Anzeige die
+**Kategorie** nicht mehr automatisch mitgelesen werden.
+
+Ab v5 bricht das nicht mehr ab: Die Anzeige wird trotzdem gespeichert (Titel,
+Preis, Beschreibung, Bilder von der Detailseite), nur **ohne Kategorie** – ein
+Warnhinweis erscheint. Folge: Für das **vollautomatische** 1-Klick-Neueinstellen
+(⚡ über die KA-API) fehlt dann die Kategorie. Solche Anzeigen kannst du über den
+Formular-Weg einstellen (⚡ öffnet die vorausgefüllte Aufgeben-Seite, du wählst
+die Kategorie).
+
+Wenn du das vollautomatische Neueinstellen wie früher zurück willst, brauche ich
+den aktuellen HTML-Aufbau der Bearbeiten-Seite: Öffne bei einer deiner Anzeigen
+`www.kleinanzeigen.de/p-anzeige-bearbeiten.html?adId=DEINE_ID`, Rechtsklick →
+„Seitenquelltext anzeigen", und schick mir den Teil rund um das Formular
+(Feldnamen). Dann ziehe ich die Selektoren nach.
+
 ## Hinweis
 
 Vollautomatisches Einstellen bei Kleinanzeigen bewegt sich in deren ToS-Grauzone
