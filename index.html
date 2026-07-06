@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Verkaufsassistent">
+<meta name="theme-color" content="#7c6fff">
+<title>Verkaufsassistent</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-96.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap');
+:root{--bg:#0a0a0f;--s:#13131a;--s2:#1c1c27;--bd:#2a2a3d;--ac:#7c6fff;--tx:#e8e8f0;--mu:#666680;--ok:#6bffb8;--er:#ff6b6b;--wa:#ffcc6b;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-height:100dvh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(124,111,255,.03)1px,transparent 1px),linear-gradient(90deg,rgba(124,111,255,.03)1px,transparent 1px);
+  background-size:40px 40px;}
+
+/* Tabs */
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--s);border-top:1px solid var(--bd);
+  display:flex;max-width:480px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom,.4rem);}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 6px;
+  cursor:pointer;font-size:.6rem;color:var(--mu);letter-spacing:.04em;text-transform:uppercase;
+  border:none;background:none;transition:color .2s;font-family:'DM Mono',monospace;}
+.tab.active{color:var(--ac);}
+.tab-icon{font-size:1.3rem;line-height:1;}
+.tab-dot{width:4px;height:4px;border-radius:50%;background:var(--ac);opacity:0;transition:opacity .2s;}
+.tab.active .tab-dot{opacity:1;}
+
+/* Pages */
+.page{display:none;position:relative;z-index:1;max-width:480px;margin:0 auto;
+  padding:24px 20px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 90px);
+  min-height:100dvh;}
+.page.active{display:block;animation:fadeUp .25s ease both;}
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-top:8px;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.35rem;letter-spacing:-.03em;}
+.logo span{color:var(--ac);}
+.status-pill{font-size:.65rem;padding:4px 10px;border-radius:100px;border:1px solid var(--bd);
+  color:var(--mu);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
+.status-pill.on{border-color:var(--ok);color:var(--ok);background:rgba(107,255,184,.06);}
+
+/* Upload */
+.upload-zone{background:var(--s);border:1.5px dashed var(--bd);border-radius:20px;
+  padding:28px 20px;text-align:center;cursor:pointer;transition:all .3s;
+  position:relative;overflow:hidden;margin-bottom:12px;}
+.upload-zone.drag{border-color:var(--ac);background:rgba(124,111,255,.06);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:0;}
+.upload-icon{width:56px;height:56px;margin:0 auto 12px;background:var(--s2);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;}
+.upload-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:6px;}
+.upload-sub{font-size:.73rem;color:var(--mu);line-height:1.5;}
+.badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
+.badge{font-size:.65rem;padding:3px 9px;border-radius:100px;border:1px solid var(--bd);color:var(--mu);}
+.badge.free{border-color:rgba(107,255,184,.4);color:var(--ok);background:rgba(107,255,184,.06);}
+
+/* Thumbs */
+.thumbs{display:none;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-bottom:14px;}
+.thumbs.on{display:grid;}
+.thumb{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--bd);background:var(--s2);}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.thumb .del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,.65);color:#fff;border:none;font-size:.7rem;cursor:pointer;line-height:1;}
+.thumb.add{display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:var(--mu);
+  cursor:pointer;border-style:dashed;position:relative;}
+.thumb.add input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:0;}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 20px;
+  border-radius:12px;border:none;font-family:'DM Mono',monospace;font-size:.8rem;
+  cursor:pointer;transition:all .2s;letter-spacing:.04em;text-decoration:none;}
+.btn-p{background:var(--ac);color:#fff;}
+.btn-p:active{opacity:.8;transform:scale(.98);}
+.btn-p:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.btn-g{background:var(--s2);color:var(--mu);border:1px solid var(--bd);}
+.btn-g:active{opacity:.7;}
+.btn-sm{padding:8px 12px;font-size:.68rem;border-radius:9px;}
+.row{display:flex;gap:10px;}
+
+/* Form */
+.card{background:var(--s);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.7rem;color:var(--mu);margin-bottom:5px;line-height:1.4;}
+.field label a{color:var(--ac);text-decoration:none;}
+.field input,.field select,.field textarea{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:10px;
+  padding:11px 14px;color:var(--tx);font-family:'DM Mono',monospace;font-size:.8rem;
+  outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--ac);}
+.field input::placeholder,.field textarea::placeholder{color:var(--mu);font-size:.75rem;}
+.field textarea{resize:vertical;min-height:70px;line-height:1.6;}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666680' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;}
+.chk{display:flex;align-items:flex-start;gap:10px;font-size:.75rem;color:var(--tx);cursor:pointer;
+  line-height:1.5;padding:6px 0;user-select:none;}
+.chk input{width:17px;height:17px;accent-color:var(--ac);flex-shrink:0;margin-top:1px;cursor:pointer;
+  -webkit-appearance:checkbox;appearance:auto;padding:0;border-radius:0;}
+.chk .sub{display:block;font-size:.65rem;color:var(--mu);}
+.chkrow{display:flex;gap:14px;flex-wrap:wrap;}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:40px !important;}
+.eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--mu);padding:6px;}
+.key-status{font-size:.68rem;margin-top:5px;}
+.key-status.ok{color:var(--ok);}
+.key-status.er{color:var(--er);}
+.counter{font-size:.62rem;color:var(--mu);text-align:right;margin-top:3px;}
+.counter.over{color:var(--er);}
+
+/* Progress */
+.prog{display:none;background:var(--s);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:16px;}
+.prog.on{display:block;}
+.step{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:.78rem;color:var(--mu);transition:color .3s;}
+.step:last-child{border-bottom:none;}
+.step.active{color:var(--tx);}
+.step.done{color:var(--ok);}
+.si{width:28px;height:28px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;transition:all .3s;}
+.step.active .si{border-color:var(--ac);background:rgba(124,111,255,.1);animation:pulse 1.2s infinite;}
+.step.done .si{background:rgba(107,255,184,.1);border-color:var(--ok);}
+
+/* Alert */
+.alert{display:none;border-radius:12px;padding:13px 15px;font-size:.77rem;line-height:1.5;margin-bottom:14px;}
+.alert.on{display:block;}
+.alert.ok{background:rgba(107,255,184,.08);border:1px solid var(--ok);color:var(--ok);}
+.alert.er{background:rgba(255,107,107,.08);border:1px solid var(--er);color:var(--er);}
+
+/* Result */
+.result{display:none;}
+.result.on{display:block;animation:fadeUp .25s ease both;}
+.warn-box{background:rgba(255,204,107,.06);border:1px solid var(--wa);border-radius:12px;
+  padding:14px;margin-bottom:14px;font-size:.75rem;color:var(--wa);line-height:1.7;}
+.warn-box ul{margin:6px 0 0 18px;}
+.note-box{background:rgba(107,255,184,.06);border:1px solid var(--ok);border-radius:12px;
+  padding:14px;margin-bottom:14px;font-size:.75rem;color:var(--ok);line-height:1.7;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.chip{font-size:.65rem;padding:4px 10px;border-radius:100px;border:1px solid var(--bd);color:var(--mu);background:var(--s2);}
+.chip b{color:var(--tx);font-weight:500;}
+.legal-preview{background:var(--s2);border:1px dashed var(--bd);border-radius:10px;padding:10px 14px;
+  font-size:.72rem;color:var(--mu);line-height:1.6;margin-top:8px;font-style:italic;}
+.price-box{display:flex;align-items:center;gap:12px;background:rgba(124,111,255,.07);border:1px solid var(--ac);
+  border-radius:12px;padding:13px 15px;margin-bottom:14px;font-size:.78rem;line-height:1.5;}
+.price-box .val{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:var(--ac);white-space:nowrap;}
+.price-box .sub{font-size:.63rem;color:var(--mu);}
+
+/* Platform cards */
+.plat{border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px;background:var(--s);}
+.plat-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.plat-logo{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-family:'Syne',sans-serif;font-size:1rem;flex-shrink:0;}
+.plat-ka .plat-logo{background:#1d4b00;color:#86e01e;}
+.plat-eb .plat-logo{background:#1c2b4a;color:#5ba7ff;}
+.plat-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;}
+.plat-sub{font-size:.63rem;color:var(--mu);}
+.plat .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.copied{background:rgba(107,255,184,.15) !important;color:var(--ok) !important;border-color:var(--ok) !important;}
+
+/* History */
+.hitem{background:var(--s);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+.hitem .ht{font-size:.82rem;margin-bottom:4px;word-break:break-word;}
+.hitem .hd{font-size:.63rem;color:var(--mu);margin-bottom:10px;}
+.hstatus{display:flex;gap:14px;margin-bottom:10px;}
+.empty{text-align:center;color:var(--mu);font-size:.75rem;padding:40px 20px;line-height:1.8;}
+.empty .big{font-size:2.2rem;margin-bottom:10px;}
+
+/* Guide */
+.gs-text{font-size:.75rem;color:var(--mu);line-height:1.85;}
+.gs-text strong{color:var(--tx);}
+.gs-link{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:10px 16px;
+  background:rgba(124,111,255,.1);border:1px solid var(--ac);border-radius:10px;
+  color:var(--ac);font-size:.75rem;text-decoration:none;}
+.msep{font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ac);
+  margin:20px 0 12px;display:flex;align-items:center;gap:8px;}
+.msep::after{content:'';flex:1;height:1px;background:var(--bd);}
+.hint{font-size:.65rem;color:var(--mu);text-align:center;margin:8px 0 14px;line-height:1.6;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,111,255,.4);}50%{box-shadow:0 0 0 7px rgba(124,111,255,0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin{display:inline-block;animation:spin .9s linear infinite;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:10px;}
+</style>
+</head>
+<body>
+
+<!-- ══════════ PAGE: ERSTELLEN ══════════ -->
+<div class="page active" id="page-create">
+  <header>
+    <div class="logo">Verkaufs<span>.</span>Assistent</div>
+    <div class="status-pill" id="keyPill">kein key</div>
+  </header>
+
+  <div class="alert" id="alert"></div>
+
+  <!-- Upload -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" accept="image/*" multiple id="fileInput">
+    <div class="upload-icon">📸</div>
+    <div class="upload-title">Produktfotos auswählen</div>
+    <div class="upload-sub">Bis zu 5 Fotos – je mehr Winkel, desto besser<br>erkennt die KI dein Produkt</div>
+    <div class="badges">
+      <span class="badge">📸 Kamera</span>
+      <span class="badge">🖼 Galerie</span>
+      <span class="badge free">🤖 Claude KI</span>
+    </div>
+  </div>
+  <div style="margin-bottom:14px">
+    <button class="btn btn-g" style="width:100%" onclick="document.getElementById('cameraInput').click()">📸 Kamera öffnen</button>
+    <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none">
+  </div>
+
+  <div class="thumbs" id="thumbs"></div>
+
+  <!-- Formular -->
+  <div class="card" id="formCard">
+    <div class="card-title">📋 Angaben zum Produkt <span style="font-size:.6rem;color:var(--mu);font-family:'DM Mono',monospace;font-weight:400">(alles optional)</span></div>
+
+    <div class="field">
+      <label>Zustand</label>
+      <select id="fZustand">
+        <option value="">KI soll einschätzen</option>
+        <option>Neu (originalverpackt)</option>
+        <option>Wie neu</option>
+        <option>Sehr gut</option>
+        <option>Gut</option>
+        <option>Gebraucht / in Ordnung</option>
+        <option>Defekt / für Bastler</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Marke / Modell <span style="opacity:.7">(leer = KI erkennt aus Foto)</span></label>
+      <input type="text" id="fMarke" placeholder="z.B. Bosch GSR 12V">
+    </div>
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label>Kategorie</label>
+        <input type="text" id="fKategorie" placeholder="z.B. Werkzeug">
+      </div>
+      <div class="field" style="flex:1">
+        <label>Maße / Größe</label>
+        <input type="text" id="fGroesse" placeholder="z.B. Gr. M / 80×60 cm">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Preis (€)</label>
+      <div class="row">
+        <input type="number" id="fPreis" placeholder="leer = KI schlägt vor" min="0" step="0.5" style="flex:1">
+      </div>
+      <div class="chkrow" style="margin-top:6px">
+        <label class="chk"><input type="checkbox" id="fVB" checked> VB (Verhandlungsbasis)</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Versand</label>
+      <div class="chkrow">
+        <label class="chk"><input type="checkbox" id="fAbholung" checked> Abholung</label>
+        <label class="chk"><input type="checkbox" id="fVersand"> Versand möglich</label>
+      </div>
+      <input type="number" id="fVersandKosten" placeholder="Versandkosten € (optional)" min="0" step="0.5" style="margin-top:8px;display:none">
+    </div>
+
+    <div class="field">
+      <label>Zahlung</label>
+      <div class="chkrow">
+        <label class="chk"><input type="checkbox" id="fZahlBar" checked> Bar</label>
+        <label class="chk"><input type="checkbox" id="fZahlPP"> PayPal</label>
+        <label class="chk"><input type="checkbox" id="fZahlUeb"> Überweisung</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Besonderheiten / Mängel <span style="opacity:.7">(wichtig für ehrliche Anzeige)</span></label>
+      <textarea id="fNotizen" placeholder="z.B. kleiner Kratzer am Deckel, 2. Akku dabei, Rechnung vorhanden..."></textarea>
+    </div>
+
+    <label class="chk" style="border-top:1px solid var(--bd);padding-top:12px;margin-top:4px">
+      <input type="checkbox" id="fLegal" checked>
+      <span>Privatverkaufs-Hinweis ans Ende anhängen
+      <span class="sub">Gewährleistungs-Ausschluss – Text änderbar in ⚙ Einstellungen</span></span>
+    </label>
+
+    <button class="btn btn-p" style="width:100%;margin-top:12px" id="genBtn" onclick="generate()">✨ Anzeige erstellen</button>
+    <div class="hint" style="margin-bottom:0">~1–2 Cent pro Anzeige (Claude API)</div>
+  </div>
+
+  <!-- Progress -->
+  <div class="prog" id="prog">
+    <div class="step" id="step1"><div class="si" id="si1">🤖</div><span>Claude analysiert deine Fotos...</span></div>
+    <div class="step" id="step2"><div class="si" id="si2">✍️</div><span>Titel &amp; Beschreibung werden erstellt...</span></div>
+    <div class="step" id="step3"><div class="si" id="si3">✅</div><span>Fertig</span></div>
+  </div>
+
+  <!-- Result -->
+  <div class="result" id="result">
+    <div class="msep">Vorschau – bitte prüfen &amp; anpassen</div>
+
+    <div class="warn-box" id="uncertainBox" style="display:none">
+      ⚠️ <strong>Das konnte die KI nicht sicher erkennen – bitte prüfen:</strong>
+      <ul id="uncertainList"></ul>
+    </div>
+
+    <div class="chips" id="aiChips"></div>
+
+    <div class="price-box" id="priceBox" style="display:none">
+      <div class="val" id="priceVal"></div>
+      <div>KI-Preisvorschlag<br><span class="sub">Unverbindliche Schätzung – ähnliche Angebote selbst vergleichen!</span></div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Titel für Kleinanzeigen</label>
+        <input type="text" id="rTitelKA" oninput="counters();saveEdits()">
+        <div class="counter" id="cntKA"></div>
+      </div>
+      <div class="field">
+        <label>Titel für eBay</label>
+        <input type="text" id="rTitelEB" oninput="counters();saveEdits()">
+        <div class="counter" id="cntEB"></div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <label>Preis (€)</label>
+          <input type="number" id="rPreis" min="0" step="0.5" oninput="saveEdits()">
+        </div>
+        <div class="field" style="flex:1;display:flex;align-items:flex-end;padding-bottom:12px">
+          <label class="chk" style="padding:0"><input type="checkbox" id="rVB" onchange="saveEdits()"> VB</label>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Beschreibung</label>
+        <textarea id="rBeschreibung" style="min-height:180px" oninput="saveEdits()"></textarea>
+        <div class="legal-preview" id="legalPreview"></div>
+        <label class="chk" style="margin-top:6px">
+          <input type="checkbox" id="rLegal" onchange="updateLegalPreview();saveEdits()">
+          <span>Privatverkaufs-Hinweis anhängen</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="msep">Jetzt einstellen</div>
+
+    <!-- Kleinanzeigen -->
+    <div class="plat plat-ka">
+      <div class="plat-head">
+        <div class="plat-logo">K</div>
+        <div>
+          <div class="plat-name">Kleinanzeigen</div>
+          <div class="plat-sub">Titel max. 65 Zeichen · kostenlos inserieren</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-g btn-sm" onclick="copyText(this, val('rTitelKA'))">📋 Titel</button>
+        <button class="btn btn-g btn-sm" onclick="copyText(this, fullDesc())">📋 Beschreibung</button>
+        <button class="btn btn-g btn-sm" onclick="copyText(this, allText('ka'))">📋 Alles kopieren</button>
+        <button class="btn btn-g btn-sm" id="shareKA" onclick="shareText('ka')">📤 Teilen</button>
+      </div>
+      <div class="actions">
+        <a class="btn btn-p btn-sm" style="flex:1" href="https://www.kleinanzeigen.de/p-anzeige-aufgeben.html" target="_blank" rel="noopener">→ Anzeige aufgeben &amp; einfügen</a>
+      </div>
+    </div>
+
+    <!-- eBay -->
+    <div class="plat plat-eb">
+      <div class="plat-head">
+        <div class="plat-logo">e</div>
+        <div>
+          <div class="plat-name">eBay</div>
+          <div class="plat-sub">Titel max. 80 Zeichen · Verkaufsprovision beachten</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-g btn-sm" onclick="copyText(this, val('rTitelEB'))">📋 Titel</button>
+        <button class="btn btn-g btn-sm" onclick="copyText(this, fullDesc())">📋 Beschreibung</button>
+        <button class="btn btn-g btn-sm" onclick="copyText(this, allText('eb'))">📋 Alles kopieren</button>
+        <button class="btn btn-g btn-sm" id="shareEB" onclick="shareText('eb')">📤 Teilen</button>
+      </div>
+      <div class="actions">
+        <a class="btn btn-p btn-sm" style="flex:1" href="https://www.ebay.de/sl/sell" target="_blank" rel="noopener">→ Bei eBay einstellen &amp; einfügen</a>
+      </div>
+    </div>
+
+    <div class="hint">💡 Tipp: „Alles kopieren" → in der Plattform-App das Formular öffnen<br>→ Titel und Text einfügen → deine Original-Fotos hochladen → fertig!</div>
+
+    <button class="btn btn-g" style="width:100%" onclick="resetForm()">🔄 Neue Anzeige erstellen</button>
+  </div>
+</div>
+
+<!-- ══════════ PAGE: VERLAUF ══════════ -->
+<div class="page" id="page-history">
+  <header>
+    <div class="logo">Verlauf<span>.</span></div>
+    <div class="status-pill" id="histCount"></div>
+  </header>
+  <div id="histList"></div>
+</div>
+
+<!-- ══════════ PAGE: EINSTELLUNGEN ══════════ -->
+<div class="page" id="page-settings">
+  <header>
+    <div class="logo">Einstellungen<span>.</span></div>
+  </header>
+
+  <div class="alert" id="alertSettings"></div>
+
+  <div class="card">
+    <div class="card-title">🤖 Claude API Key</div>
+    <div class="field">
+      <label>Anthropic API Key –
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a></label>
+      <div class="pw-wrap">
+        <input type="password" id="sKey" placeholder="sk-ant-..." autocomplete="off">
+        <button class="eye" onclick="toggleEye('sKey',this)">👁</button>
+      </div>
+      <div class="key-status" id="keyStatus"></div>
+    </div>
+    <div class="gs-text">
+      1. Auf <strong>console.anthropic.com</strong> anmelden<br>
+      2. Links <strong>„API Keys"</strong> → <strong>„Create Key"</strong><br>
+      3. Key kopieren und hier einfügen<br>
+      Kosten: ca. <strong>1–2 Cent pro Anzeige</strong>. Der Key bleibt nur auf deinem Gerät gespeichert.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚖️ Rechtlicher Hinweis (Privatverkauf)</div>
+    <div class="field" style="margin-bottom:6px">
+      <textarea id="sLegal" style="min-height:90px"></textarea>
+    </div>
+    <div class="gs-text" style="font-size:.68rem">
+      Wird ans Ende der Beschreibung angehängt, wenn die Checkbox beim Erstellen aktiviert ist.
+      Der Standardtext ist gängige Praxis bei Privatverkäufen – <strong>keine Rechtsberatung</strong>, im Zweifel selbst prüfen.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📦 Standard-Vorgaben für neue Anzeigen</div>
+    <div class="field">
+      <label>Versand</label>
+      <div class="chkrow">
+        <label class="chk"><input type="checkbox" id="sDefAbholung" checked> Abholung</label>
+        <label class="chk"><input type="checkbox" id="sDefVersand"> Versand möglich</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Zahlung</label>
+      <div class="chkrow">
+        <label class="chk"><input type="checkbox" id="sDefBar" checked> Bar</label>
+        <label class="chk"><input type="checkbox" id="sDefPP"> PayPal</label>
+        <label class="chk"><input type="checkbox" id="sDefUeb"> Überweisung</label>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-p" style="width:100%" onclick="saveSettings()">💾 Speichern</button>
+
+  <div class="msep">So funktioniert's</div>
+  <div class="gs-text" style="margin-bottom:14px">
+    <strong>1.</strong> Fotos vom Produkt machen (mehrere Winkel!)<br>
+    <strong>2.</strong> Zustand &amp; Mängel angeben – Rest erkennt die KI<br>
+    <strong>3.</strong> Vorschau prüfen: Die KI ist gut, aber nicht unfehlbar.
+    Alles unter „⚠️ nicht sicher erkannt" unbedingt kontrollieren!<br>
+    <strong>4.</strong> „Alles kopieren" → bei Kleinanzeigen/eBay einfügen, Fotos hochladen, absenden.<br><br>
+    Der KI-Preisvorschlag ist eine grobe Schätzung – vergleiche selbst ähnliche verkaufte Artikel.
+  </div>
+</div>
+
+<!-- Tabbar -->
+<div class="tabbar">
+  <button class="tab active" id="tab-create" onclick="showPage('create')">
+    <span class="tab-icon">✨</span>Erstellen<span class="tab-dot"></span>
+  </button>
+  <button class="tab" id="tab-history" onclick="showPage('history')">
+    <span class="tab-icon">🗂</span>Verlauf<span class="tab-dot"></span>
+  </button>
+  <button class="tab" id="tab-settings" onclick="showPage('settings')">
+    <span class="tab-icon">⚙️</span>Einstellungen<span class="tab-dot"></span>
+  </button>
+</div>
+
+<script>
+'use strict';
+
+// ── Service Worker ────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', {scope:'./'})
+    .catch(function(e){ console.warn('SW:', e.message); });
+}
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function ls(k)  { try{ return localStorage.getItem(k);  }catch(e){ return null; } }
+function lss(k,v){ try{ localStorage.setItem(k,v);       }catch(e){} }
+var DEFAULT_LEGAL = 'Privatverkauf: Der Verkauf erfolgt unter Ausschluss jeglicher Gewährleistung, Garantie und Rücknahme.';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var photos = [];          // [{b64, url}]
+var MAX_PHOTOS = 5;
+var currentId = null;     // id of listing being edited (history entry)
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  window.scrollTo(0,0);
+  if (name==='history') renderHistory();
+  if (name==='settings') loadSettings();
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+var alertTimer = null;
+function showAlert(msg, type, ms, target) {
+  var el = document.getElementById(target || 'alert');
+  el.innerHTML = msg;
+  el.className = 'alert on ' + (type||'ok');
+  if (alertTimer) clearTimeout(alertTimer);
+  if (ms) alertTimer = setTimeout(function(){ el.className='alert'; }, ms);
+}
+function hideAlert() {
+  document.getElementById('alert').className = 'alert';
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function toggleEye(id, btn) {
+  var inp = document.getElementById(id);
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  btn.textContent = inp.type==='password' ? '👁' : '🙈';
+}
+function loadSettings() {
+  document.getElementById('sKey').value = ls('ak') || '';
+  document.getElementById('sLegal').value = ls('legal') || DEFAULT_LEGAL;
+  document.getElementById('sDefAbholung').checked = ls('defAbholung') !== '0';
+  document.getElementById('sDefVersand').checked  = ls('defVersand') === '1';
+  document.getElementById('sDefBar').checked = ls('defBar') !== '0';
+  document.getElementById('sDefPP').checked  = ls('defPP') === '1';
+  document.getElementById('sDefUeb').checked = ls('defUeb') === '1';
+  updateKeyStatus();
+}
+function saveSettings() {
+  lss('ak', document.getElementById('sKey').value.trim());
+  lss('legal', document.getElementById('sLegal').value.trim() || DEFAULT_LEGAL);
+  lss('defAbholung', document.getElementById('sDefAbholung').checked ? '1':'0');
+  lss('defVersand',  document.getElementById('sDefVersand').checked ? '1':'0');
+  lss('defBar', document.getElementById('sDefBar').checked ? '1':'0');
+  lss('defPP',  document.getElementById('sDefPP').checked ? '1':'0');
+  lss('defUeb', document.getElementById('sDefUeb').checked ? '1':'0');
+  updateKeyStatus();
+  updateLegalPreview();
+  showAlert('✓ Einstellungen gespeichert!', 'ok', 2200, 'alertSettings');
+}
+function updateKeyStatus() {
+  var k = ls('ak');
+  var el = document.getElementById('keyStatus');
+  var pill = document.getElementById('keyPill');
+  var has = k && k.length > 10;
+  el.textContent = has ? '✓ Key gespeichert' : 'Kein Key – bitte eintragen';
+  el.className = 'key-status ' + (has?'ok':'er');
+  pill.textContent = has ? 'KI bereit' : 'kein key';
+  pill.classList.toggle('on', !!has);
+}
+function applyDefaults() {
+  document.getElementById('fAbholung').checked = ls('defAbholung') !== '0';
+  document.getElementById('fVersand').checked  = ls('defVersand') === '1';
+  document.getElementById('fZahlBar').checked = ls('defBar') !== '0';
+  document.getElementById('fZahlPP').checked  = ls('defPP') === '1';
+  document.getElementById('fZahlUeb').checked = ls('defUeb') === '1';
+  toggleShipCost();
+}
+function legalText() { return ls('legal') || DEFAULT_LEGAL; }
+
+// ── Photos ────────────────────────────────────────────────────────────────────
+function downscale(file) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height, MAX = 1280;
+      if (Math.max(w,h) > MAX) {
+        var s = MAX / Math.max(w,h);
+        w = Math.round(w*s); h = Math.round(h*s);
+      }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL('image/jpeg', .85));
+    };
+    img.onerror = function(){ reject(new Error('Bild konnte nicht gelesen werden')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function addPhotos(files) {
+  hideAlert();
+  for (var i=0; i<files.length; i++) {
+    if (photos.length >= MAX_PHOTOS) {
+      showAlert('Maximal ' + MAX_PHOTOS + ' Fotos.', 'er', 2500);
+      break;
+    }
+    var f = files[i];
+    if (!f.type.startsWith('image/')) continue;
+    try {
+      var dataUrl = await downscale(f);
+      photos.push({ b64: dataUrl.split(',')[1], url: dataUrl });
+    } catch(e) {
+      showAlert('Foto konnte nicht geladen werden: ' + e.message, 'er', 3000);
+    }
+  }
+  renderThumbs();
+}
+function removePhoto(i) {
+  photos.splice(i, 1);
+  renderThumbs();
+}
+function renderThumbs() {
+  var t = document.getElementById('thumbs');
+  var uz = document.getElementById('uploadZone');
+  if (!photos.length) {
+    t.classList.remove('on');
+    t.innerHTML = '';
+    uz.style.display = '';
+    return;
+  }
+  uz.style.display = 'none';
+  t.classList.add('on');
+  var html = photos.map(function(p, i) {
+    return '<div class="thumb"><img src="' + p.url + '" alt="Foto ' + (i+1) + '">' +
+      '<button class="del" onclick="removePhoto(' + i + ')" title="Entfernen">✕</button></div>';
+  }).join('');
+  if (photos.length < MAX_PHOTOS) {
+    html += '<div class="thumb add">＋<input type="file" accept="image/*" multiple ' +
+      'onchange="addPhotos(this.files);this.value=\'\'"></div>';
+  }
+  t.innerHTML = html;
+}
+document.getElementById('fileInput').addEventListener('change', function(e){
+  addPhotos(e.target.files); e.target.value='';
+});
+document.getElementById('cameraInput').addEventListener('change', function(e){
+  addPhotos(e.target.files); e.target.value='';
+});
+var uz = document.getElementById('uploadZone');
+uz.addEventListener('dragover', function(e){ e.preventDefault(); uz.classList.add('drag'); });
+uz.addEventListener('dragleave', function(){ uz.classList.remove('drag'); });
+uz.addEventListener('drop', function(e){
+  e.preventDefault(); uz.classList.remove('drag');
+  if (e.dataTransfer.files.length) addPhotos(e.dataTransfer.files);
+});
+document.getElementById('fVersand').addEventListener('change', toggleShipCost);
+function toggleShipCost() {
+  document.getElementById('fVersandKosten').style.display =
+    document.getElementById('fVersand').checked ? '' : 'none';
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function val(id) { return document.getElementById(id).value; }
+function checked(id) { return document.getElementById(id).checked; }
+
+function collectInfo() {
+  var pay = [];
+  if (checked('fZahlBar')) pay.push('Barzahlung');
+  if (checked('fZahlPP'))  pay.push('PayPal');
+  if (checked('fZahlUeb')) pay.push('Überweisung');
+  var ship = [];
+  if (checked('fAbholung')) ship.push('Abholung');
+  if (checked('fVersand')) {
+    var vk = val('fVersandKosten');
+    ship.push('Versand möglich' + (vk ? ' (+' + vk + ' €)' : ''));
+  }
+  return {
+    zustand:   val('fZustand'),
+    marke:     val('fMarke').trim(),
+    kategorie: val('fKategorie').trim(),
+    groesse:   val('fGroesse').trim(),
+    preis:     val('fPreis'),
+    vb:        checked('fVB'),
+    versand:   ship.join(', ') || 'keine Angabe',
+    zahlung:   pay.join(', ') || 'keine Angabe',
+    notizen:   val('fNotizen').trim()
+  };
+}
+
+// ── Claude API ────────────────────────────────────────────────────────────────
+async function callClaude(apiKey, info) {
+  var content = photos.map(function(p) {
+    return { type:'image', source:{ type:'base64', media_type:'image/jpeg', data:p.b64 } };
+  });
+
+  var prompt =
+    'Du siehst ' + photos.length + ' Foto(s) eines Produkts, das privat verkauft werden soll.\n' +
+    'Erstelle daraus eine ehrliche, verkaufsfördernde Anzeige für Kleinanzeigen.de und eBay.de.\n\n' +
+    'Angaben des Verkäufers:\n' +
+    '- Zustand: ' + (info.zustand || 'bitte aus Fotos einschätzen') + '\n' +
+    '- Marke/Modell: ' + (info.marke || 'bitte aus Fotos erkennen') + '\n' +
+    '- Kategorie: ' + (info.kategorie || 'bitte bestimmen') + '\n' +
+    '- Maße/Größe: ' + (info.groesse || 'keine Angabe') + '\n' +
+    '- Besonderheiten/Mängel: ' + (info.notizen || 'keine Angabe') + '\n' +
+    '- Versand: ' + info.versand + '\n' +
+    '- Zahlung: ' + info.zahlung + '\n\n' +
+    'Antworte AUSSCHLIESSLICH mit diesem JSON-Objekt, ohne Markdown, ohne Text davor/danach:\n' +
+    '{\n' +
+    ' "titel_kleinanzeigen": "max. 65 Zeichen, prägnant, wichtigste Suchbegriffe",\n' +
+    ' "titel_ebay": "max. 80 Zeichen, Suchbegriffe zuerst: Marke Modell Merkmal Zustand",\n' +
+    ' "beschreibung": "Anzeigentext mit Absätzen (\\n\\n): Was wird verkauft, Zustand ehrlich inkl. aller Mängel, Details/Lieferumfang, am Ende Versand- und Zahlungsinfo laut Angaben",\n' +
+    ' "kategorie": "passende Kategorie",\n' +
+    ' "marke": "erkannte Marke oder null",\n' +
+    ' "modell": "erkanntes Modell oder null",\n' +
+    ' "zustandseinschaetzung": "kurze ehrliche Einschätzung vom Foto",\n' +
+    ' "preis_von": Zahl in Euro oder null,\n' +
+    ' "preis_bis": Zahl in Euro oder null,\n' +
+    ' "unsicherheiten": ["alles was du NICHT sicher erkennen konntest, z.B. genaues Modell, Funktionsfähigkeit, Echtheit, Vollständigkeit"]\n' +
+    '}\n\n' +
+    'Regeln:\n' +
+    '- NICHTS erfinden. Nur beschreiben, was auf den Fotos sicher erkennbar ist oder der Verkäufer angegeben hat.\n' +
+    '- Unsichere Punkte gehören in "unsicherheiten", nicht als Fakt in die Beschreibung.\n' +
+    '- Keine übertriebenen Werbefloskeln, kein GROSSSCHREIBEN.\n' +
+    '- KEINEN Privatverkaufs-/Rechtshinweis einfügen – das macht die App selbst.\n' +
+    '- Preisschätzung: realistischer deutscher Gebrauchtmarkt-Preis (Kleinanzeigen-Niveau).\n' +
+    '- Titel-Längen strikt einhalten.';
+
+  content.push({ type:'text', text: prompt });
+
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-5',
+      max_tokens: 1500,
+      system: 'Du bist Experte für private Verkaufsanzeigen (Kleinanzeigen.de, eBay.de). Du antwortest NUR mit einem einzigen JSON-Objekt, ohne Markdown und ohne weiteren Text. Du erfindest niemals Produkteigenschaften.',
+      messages: [{ role:'user', content: content }]
+    })
+  });
+
+  if (!resp.ok) {
+    var err = {};
+    try { err = await resp.json(); } catch(e) {}
+    var msg = (err.error && err.error.message) || 'HTTP ' + resp.status;
+    if (resp.status === 401) throw new Error('Ungültiger API Key – bitte in ⚙ Einstellungen prüfen');
+    if (resp.status === 429) throw new Error('Zu viele Anfragen – kurz warten und erneut versuchen');
+    throw new Error('Claude Fehler: ' + msg);
+  }
+
+  var data = await resp.json();
+  var text = ((data.content && data.content[0] && data.content[0].text) || '').trim()
+    .replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    var m = text.match(/\{[\s\S]*\}/);
+    if (m) return JSON.parse(m[0]);
+    throw new Error('KI-Antwort konnte nicht verarbeitet werden – bitte erneut versuchen');
+  }
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+function setStep(n, cls) {
+  var s = document.getElementById('step'+n);
+  s.className = 'step' + (cls ? ' '+cls : '');
+  document.getElementById('si'+n).textContent = cls==='done' ? '✓' : ({1:'🤖',2:'✍️',3:'✅'})[n];
+}
+
+async function generate() {
+  hideAlert();
+  if (!photos.length) {
+    showAlert('Bitte zuerst mindestens ein Foto auswählen.', 'er', 3000);
+    window.scrollTo(0,0);
+    return;
+  }
+  var apiKey = ls('ak');
+  if (!apiKey) {
+    showPage('settings');
+    showAlert('Bitte zuerst einen Claude API Key eintragen.', 'er', 4000, 'alertSettings');
+    return;
+  }
+
+  var btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Erstelle Anzeige...';
+  document.getElementById('prog').classList.add('on');
+  document.getElementById('result').classList.remove('on');
+  setStep(1,'active'); setStep(2,''); setStep(3,'');
+  document.getElementById('prog').scrollIntoView({behavior:'smooth', block:'center'});
+
+  try {
+    var info = collectInfo();
+    var r = await callClaude(apiKey, info);
+    setStep(1,'done'); setStep(2,'active');
+    await new Promise(function(res){ setTimeout(res, 350); });
+    setStep(2,'done'); setStep(3,'done');
+
+    showResult(r, info);
+    document.getElementById('prog').classList.remove('on');
+    document.getElementById('result').classList.add('on');
+    document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'});
+  } catch(err) {
+    document.getElementById('prog').classList.remove('on');
+    showAlert('Fehler: ' + (err.message || 'Unbekannter Fehler'), 'er');
+    window.scrollTo(0,0);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '✨ Anzeige erstellen';
+}
+
+function showResult(r, info) {
+  // Titles
+  document.getElementById('rTitelKA').value = (r.titel_kleinanzeigen || '').slice(0,120);
+  document.getElementById('rTitelEB').value = (r.titel_ebay || r.titel_kleinanzeigen || '').slice(0,120);
+  document.getElementById('rBeschreibung').value = r.beschreibung || '';
+
+  // Price: user price wins, else KI suggestion (midpoint)
+  var preis = info.preis;
+  if (!preis && r.preis_von != null) {
+    var von = Number(r.preis_von), bis = Number(r.preis_bis != null ? r.preis_bis : r.preis_von);
+    preis = Math.round((von + bis) / 2);
+  }
+  document.getElementById('rPreis').value = preis || '';
+  document.getElementById('rVB').checked = info.vb;
+  document.getElementById('rLegal').checked = checked('fLegal');
+
+  // Price suggestion box
+  var pb = document.getElementById('priceBox');
+  if (r.preis_von != null) {
+    var range = r.preis_bis != null && r.preis_bis !== r.preis_von
+      ? r.preis_von + '–' + r.preis_bis + ' €' : r.preis_von + ' €';
+    document.getElementById('priceVal').textContent = range;
+    pb.style.display = '';
+  } else pb.style.display = 'none';
+
+  // Uncertainties
+  var ub = document.getElementById('uncertainBox');
+  var ul = document.getElementById('uncertainList');
+  var unc = Array.isArray(r.unsicherheiten) ? r.unsicherheiten.filter(Boolean) : [];
+  if (unc.length) {
+    ul.innerHTML = unc.map(function(u){ return '<li>' + esc(u) + '</li>'; }).join('');
+    ub.style.display = '';
+  } else ub.style.display = 'none';
+
+  // Chips
+  var chips = [];
+  if (r.kategorie) chips.push('📁 <b>' + esc(r.kategorie) + '</b>');
+  if (r.marke)     chips.push('🏷 <b>' + esc(r.marke) + (r.modell ? ' ' + esc(r.modell) : '') + '</b>');
+  if (r.zustandseinschaetzung) chips.push('🔎 <b>' + esc(r.zustandseinschaetzung) + '</b>');
+  document.getElementById('aiChips').innerHTML =
+    chips.map(function(c){ return '<span class="chip">' + c + '</span>'; }).join('');
+
+  counters();
+  updateLegalPreview();
+
+  // Save to history
+  currentId = Date.now();
+  var listings = getListings();
+  listings.unshift(currentEntry());
+  if (listings.length > 50) listings.length = 50;
+  setListings(listings);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function counters() {
+  var ka = val('rTitelKA').length, eb = val('rTitelEB').length;
+  var cka = document.getElementById('cntKA'), ceb = document.getElementById('cntEB');
+  cka.textContent = ka + ' / 65 Zeichen' + (ka>65 ? ' – zu lang für Kleinanzeigen!' : '');
+  ceb.textContent = eb + ' / 80 Zeichen' + (eb>80 ? ' – zu lang für eBay!' : '');
+  cka.className = 'counter' + (ka>65 ? ' over':'');
+  ceb.className = 'counter' + (eb>80 ? ' over':'');
+}
+
+function updateLegalPreview() {
+  var lp = document.getElementById('legalPreview');
+  if (checked('rLegal')) {
+    lp.textContent = legalText();
+    lp.style.display = '';
+  } else lp.style.display = 'none';
+}
+
+// ── Output text builders ──────────────────────────────────────────────────────
+function fullDesc() {
+  var d = val('rBeschreibung').trim();
+  if (checked('rLegal')) d += '\n\n' + legalText();
+  return d;
+}
+function priceLine() {
+  var p = val('rPreis');
+  if (!p) return '';
+  return p + ' €' + (checked('rVB') ? ' VB' : '');
+}
+function allText(plat) {
+  var title = plat==='ka' ? val('rTitelKA') : val('rTitelEB');
+  var parts = [title];
+  var pl = priceLine();
+  if (pl) parts.push('Preis: ' + pl);
+  parts.push(fullDesc());
+  return parts.join('\n\n');
+}
+
+// ── Copy & Share ──────────────────────────────────────────────────────────────
+function copyText(btn, text) {
+  var done = function() {
+    var old = btn.innerHTML;
+    btn.classList.add('copied');
+    btn.innerHTML = '✓ Kopiert';
+    setTimeout(function(){ btn.classList.remove('copied'); btn.innerHTML = old; }, 1600);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); done(); });
+  } else { fallbackCopy(text); done(); }
+}
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+function shareText(plat) {
+  var title = plat==='ka' ? val('rTitelKA') : val('rTitelEB');
+  if (navigator.share) {
+    navigator.share({ title: title, text: allText(plat) }).catch(function(){});
+  } else {
+    copyText(document.getElementById(plat==='ka'?'shareKA':'shareEB'), allText(plat));
+  }
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function getListings() {
+  try { return JSON.parse(ls('listings') || '[]'); } catch(e) { return []; }
+}
+function setListings(arr) { lss('listings', JSON.stringify(arr)); }
+
+function currentEntry() {
+  var old = getListings().find(function(l){ return l.id === currentId; }) || {};
+  return {
+    id: currentId,
+    ts: old.ts || Date.now(),
+    tka: val('rTitelKA'),
+    teb: val('rTitelEB'),
+    desc: val('rBeschreibung'),
+    preis: val('rPreis'),
+    vb: checked('rVB'),
+    legal: checked('rLegal'),
+    ka: old.ka || false,
+    eb: old.eb || false
+  };
+}
+var saveTimer = null;
+function saveEdits() {
+  if (!currentId) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(function() {
+    var listings = getListings();
+    var i = listings.findIndex(function(l){ return l.id === currentId; });
+    if (i >= 0) { listings[i] = currentEntry(); setListings(listings); }
+  }, 400);
+}
+
+function renderHistory() {
+  var listings = getListings();
+  document.getElementById('histCount').textContent = listings.length + ' Anzeigen';
+  var el = document.getElementById('histList');
+  if (!listings.length) {
+    el.innerHTML = '<div class="empty"><div class="big">🗂</div>Noch keine Anzeigen erstellt.<br>Erstelle deine erste Anzeige im ✨-Tab!</div>';
+    return;
+  }
+  el.innerHTML = listings.map(function(l) {
+    var d = new Date(l.ts).toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return '<div class="hitem">' +
+      '<div class="ht">' + esc(l.tka || '(ohne Titel)') + '</div>' +
+      '<div class="hd">' + d + (l.preis ? ' · ' + esc(l.preis) + ' €' + (l.vb?' VB':'') : '') + '</div>' +
+      '<div class="hstatus">' +
+        '<label class="chk" style="padding:0;font-size:.68rem"><input type="checkbox" ' + (l.ka?'checked':'') +
+          ' onchange="togglePosted(' + l.id + ',\'ka\',this.checked)"> Bei Kleinanzeigen ✓</label>' +
+        '<label class="chk" style="padding:0;font-size:.68rem"><input type="checkbox" ' + (l.eb?'checked':'') +
+          ' onchange="togglePosted(' + l.id + ',\'eb\',this.checked)"> Bei eBay ✓</label>' +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="btn btn-g btn-sm" style="flex:1" onclick="openListing(' + l.id + ')">📝 Öffnen</button>' +
+        '<button class="btn btn-g btn-sm" onclick="deleteListing(' + l.id + ')">🗑</button>' +
+      '</div></div>';
+  }).join('');
+}
+function togglePosted(id, plat, on) {
+  var listings = getListings();
+  var l = listings.find(function(x){ return x.id === id; });
+  if (l) { l[plat] = on; setListings(listings); }
+}
+function openListing(id) {
+  var l = getListings().find(function(x){ return x.id === id; });
+  if (!l) return;
+  currentId = id;
+  document.getElementById('rTitelKA').value = l.tka || '';
+  document.getElementById('rTitelEB').value = l.teb || '';
+  document.getElementById('rBeschreibung').value = l.desc || '';
+  document.getElementById('rPreis').value = l.preis || '';
+  document.getElementById('rVB').checked = !!l.vb;
+  document.getElementById('rLegal').checked = l.legal !== false;
+  document.getElementById('uncertainBox').style.display = 'none';
+  document.getElementById('priceBox').style.display = 'none';
+  document.getElementById('aiChips').innerHTML = '';
+  counters();
+  updateLegalPreview();
+  document.getElementById('result').classList.add('on');
+  showPage('create');
+  document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function deleteListing(id) {
+  if (!confirm('Diese Anzeige aus dem Verlauf löschen?')) return;
+  setListings(getListings().filter(function(x){ return x.id !== id; }));
+  if (currentId === id) currentId = null;
+  renderHistory();
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetForm() {
+  photos = [];
+  currentId = null;
+  renderThumbs();
+  document.getElementById('result').classList.remove('on');
+  document.getElementById('fMarke').value = '';
+  document.getElementById('fKategorie').value = '';
+  document.getElementById('fGroesse').value = '';
+  document.getElementById('fPreis').value = '';
+  document.getElementById('fNotizen').value = '';
+  document.getElementById('fVersandKosten').value = '';
+  document.getElementById('fZustand').value = '';
+  document.getElementById('fVB').checked = true;
+  document.getElementById('fLegal').checked = true;
+  applyDefaults();
+  hideAlert();
+  window.scrollTo(0,0);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+applyDefaults();
+updateKeyStatus();
+if (!ls('legal')) lss('legal', DEFAULT_LEGAL);
+</script>
+</body>
+</html>
