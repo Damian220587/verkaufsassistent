@@ -677,14 +677,16 @@ function injectDeleteCheckboxes() {
   'use strict';
   if (!location.pathname.includes('p-anzeige-aufgeben')) return;
 
+  // Selektoren für BEIDE KA-Oberflächen: neu (Astro: #ad-*) und alt (#postad-/#pstad-)
   const SEL = {
-    title: ['#postad-title', 'input[name="title"]', 'input[id*="title" i]'],
-    desc:  ['#pstad-descrptn', 'textarea[name="description"]', 'textarea[id*="descr" i]', 'textarea'],
-    price: ['#pstad-price', 'input[name="priceAmount"]', 'input[name*="price" i]', 'input[id*="price" i]'],
-    vb:    ['input[name="priceType"][value="NEGOTIABLE"]', 'input[type="radio"][value="NEGOTIABLE"]'],
-    fixed: ['input[name="priceType"][value="FIXED"]', 'input[type="radio"][value="FIXED"]'],
-    zip:   ['#postad-zip', 'input[name="zipCode"]', 'input[id*="zip" i]', 'input[name*="plz" i]'],
-    file:  ['#pictureupload-pickfiles input[type="file"]', '.pictureupload input[type="file"]',
+    title: ['#ad-title', '#postad-title', 'input[name="title"]', 'input[id*="title" i]'],
+    desc:  ['#ad-description', '#pstad-descrptn', 'textarea[name="description"]', 'textarea[id*="descr" i]', 'textarea'],
+    price: ['#ad-price', '#pstad-price', 'input[name="priceAmount"]', 'input[name*="price" i]', 'input[id*="price" i]'],
+    vb:    ['input[name="priceType"][value="NEGOTIABLE"]', 'input[type="radio"][value="NEGOTIABLE"]', '#ad-price-type-negotiable'],
+    fixed: ['input[name="priceType"][value="FIXED"]', 'input[type="radio"][value="FIXED"]', '#ad-price-type-fixed'],
+    zip:   ['#ad-zip', '#postad-zip', 'input[name="zipCode"]', 'input[id*="zip" i]', 'input[name*="plz" i]'],
+    file:  ['input[id^="html5_"][accept*="image/jpeg" i]', 'input[type="file"][accept*="image/jpeg" i]',
+            '#pictureupload-pickfiles input[type="file"]', '.pictureupload input[type="file"]',
             'input[type="file"][accept*="image" i]', 'input[type="file"]']
   };
   const q = list => { for (const s of list) { const el = document.querySelector(s); if (el) return el; } return null; };
