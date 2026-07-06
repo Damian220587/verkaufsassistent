@@ -204,7 +204,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     <input type="file" accept="image/*" multiple id="fileInput">
     <div class="upload-icon">📸</div>
     <div class="upload-title">Produktfotos auswählen</div>
-    <div class="upload-sub">Bis zu 5 Fotos – je mehr Winkel, desto besser<br>erkennt die KI dein Produkt</div>
+    <div class="upload-sub">Bis zu 10 Fotos – je mehr Winkel, desto besser<br>erkennt die KI dein Produkt</div>
     <div class="badges">
       <span class="badge">📸 Kamera</span>
       <span class="badge">🖼 Galerie</span>
@@ -346,6 +346,19 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       </div>
     </div>
 
+    <div class="card" id="photoShareCard">
+      <div class="card-title">📸 Deine Fotos für die Anzeige</div>
+      <div class="gs-text" style="margin-bottom:12px">
+        Die Original-Fotos sind hier gespeichert – du musst sie nicht neu machen.<br>
+        <strong>Teilen</strong> → in der Galerie sichern oder direkt an die
+        Kleinanzeigen-App senden (öffnet dort gleich eine neue Anzeige mit deinen Fotos!)
+      </div>
+      <div class="row">
+        <button class="btn btn-g" style="flex:1" onclick="sharePhotos()">📤 Fotos teilen</button>
+        <button class="btn btn-g" style="flex:1" onclick="downloadPhotos()">⬇️ Speichern</button>
+      </div>
+    </div>
+
     <div class="msep">Jetzt einstellen</div>
 
     <!-- Kleinanzeigen -->
@@ -388,7 +401,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
       </div>
     </div>
 
-    <div class="hint">💡 Tipp: „Alles kopieren" → in der Plattform-App das Formular öffnen<br>→ Titel und Text einfügen → deine Original-Fotos hochladen → fertig!</div>
+    <div class="hint">💡 Tipp: „Alles kopieren" → in der Plattform-App das Formular öffnen<br>→ Titel und Text einfügen → Fotos über „📸 Fotos teilen" anhängen → fertig!</div>
 
     <button class="btn btn-g" style="width:100%" onclick="resetForm()">🔄 Neue Anzeige erstellen</button>
   </div>
@@ -501,8 +514,8 @@ function lss(k,v){ try{ localStorage.setItem(k,v);       }catch(e){} }
 var DEFAULT_LEGAL = 'Privatverkauf: Der Verkauf erfolgt unter Ausschluss jeglicher Gewährleistung, Garantie und Rücknahme.';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-var photos = [];          // [{b64, url}]
-var MAX_PHOTOS = 5;
+var photos = [];          // [{b64, url, blob}] – blob = Original in voller Qualität
+var MAX_PHOTOS = 10;
 var currentId = null;     // id of listing being edited (history entry)
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -608,7 +621,7 @@ async function addPhotos(files) {
     if (!f.type.startsWith('image/')) continue;
     try {
       var dataUrl = await downscale(f);
-      photos.push({ b64: dataUrl.split(',')[1], url: dataUrl });
+      photos.push({ b64: dataUrl.split(',')[1], url: dataUrl, blob: f });
     } catch(e) {
       showAlert('Foto konnte nicht geladen werden: ' + e.message, 'er', 3000);
     }
@@ -858,13 +871,15 @@ function showResult(r, info) {
 
   counters();
   updateLegalPreview();
+  updatePhotoCard();
 
-  // Save to history
+  // Save to history (+ Original-Fotos in IndexedDB)
   currentId = Date.now();
   var listings = getListings();
   listings.unshift(currentEntry());
   if (listings.length > 50) listings.length = 50;
   setListings(listings);
+  idbSavePhotos(currentId, photos.map(function(p){ return p.blob; }));
 }
 
 function esc(s) {
@@ -938,6 +953,78 @@ function shareText(plat) {
   }
 }
 
+// ── Foto-Speicher (IndexedDB, Originale in voller Qualität) ──────────────────
+function idbOpen() {
+  return new Promise(function(res, rej) {
+    var r = indexedDB.open('va', 1);
+    r.onupgradeneeded = function(){ r.result.createObjectStore('photos'); };
+    r.onsuccess = function(){ res(r.result); };
+    r.onerror = function(){ rej(r.error); };
+  });
+}
+async function idbSavePhotos(id, blobs) {
+  try {
+    var db = await idbOpen();
+    await new Promise(function(res, rej) {
+      var tx = db.transaction('photos', 'readwrite');
+      tx.objectStore('photos').put(blobs, id);
+      tx.oncomplete = res;
+      tx.onerror = function(){ rej(tx.error); };
+    });
+  } catch(e) { console.warn('Fotos speichern:', e); }
+}
+async function idbLoadPhotos(id) {
+  try {
+    var db = await idbOpen();
+    return await new Promise(function(res) {
+      var rq = db.transaction('photos').objectStore('photos').get(id);
+      rq.onsuccess = function(){ res(rq.result || []); };
+      rq.onerror = function(){ res([]); };
+    });
+  } catch(e) { return []; }
+}
+async function idbDeletePhotos(id) {
+  try {
+    var db = await idbOpen();
+    db.transaction('photos', 'readwrite').objectStore('photos').delete(id);
+  } catch(e) {}
+}
+
+function photoFiles() {
+  return photos.map(function(p, i) {
+    var type = (p.blob && p.blob.type) || 'image/jpeg';
+    var ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg';
+    return new File([p.blob], 'anzeige-foto-' + (i+1) + '.' + ext, { type: type });
+  });
+}
+function sharePhotos() {
+  if (!photos.length) return;
+  var files = photoFiles();
+  if (navigator.canShare && navigator.canShare({ files: files })) {
+    navigator.share({ files: files, title: val('rTitelKA') || 'Anzeigenfotos' }).catch(function(){});
+  } else {
+    showAlert('Teilen von Fotos unterstützt dein Browser nicht – nutze ⬇️ Speichern.', 'er', 3500);
+    window.scrollTo(0,0);
+  }
+}
+function downloadPhotos() {
+  if (!photos.length) return;
+  var files = photoFiles();
+  files.forEach(function(f, i) {
+    setTimeout(function() {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(f);
+      a.download = f.name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    }, i * 350);
+  });
+}
+function updatePhotoCard() {
+  document.getElementById('photoShareCard').style.display = photos.length ? '' : 'none';
+}
+
 // ── History ───────────────────────────────────────────────────────────────────
 function getListings() {
   try { return JSON.parse(ls('listings') || '[]'); } catch(e) { return []; }
@@ -1000,10 +1087,21 @@ function togglePosted(id, plat, on) {
   var l = listings.find(function(x){ return x.id === id; });
   if (l) { l[plat] = on; setListings(listings); }
 }
-function openListing(id) {
+async function openListing(id) {
   var l = getListings().find(function(x){ return x.id === id; });
   if (!l) return;
   currentId = id;
+  // Gespeicherte Original-Fotos wiederherstellen
+  photos = [];
+  var blobs = await idbLoadPhotos(id);
+  for (var i = 0; i < blobs.length; i++) {
+    try {
+      var dataUrl = await downscale(blobs[i]);
+      photos.push({ b64: dataUrl.split(',')[1], url: dataUrl, blob: blobs[i] });
+    } catch(e) {}
+  }
+  renderThumbs();
+  updatePhotoCard();
   document.getElementById('rTitelKA').value = l.tka || '';
   document.getElementById('rTitelEB').value = l.teb || '';
   document.getElementById('rBeschreibung').value = l.desc || '';
@@ -1022,6 +1120,7 @@ function openListing(id) {
 function deleteListing(id) {
   if (!confirm('Diese Anzeige aus dem Verlauf löschen?')) return;
   setListings(getListings().filter(function(x){ return x.id !== id; }));
+  idbDeletePhotos(id);
   if (currentId === id) currentId = null;
   renderHistory();
 }
@@ -1031,6 +1130,7 @@ function resetForm() {
   photos = [];
   currentId = null;
   renderThumbs();
+  updatePhotoCard();
   document.getElementById('result').classList.remove('on');
   document.getElementById('fMarke').value = '';
   document.getElementById('fKategorie').value = '';

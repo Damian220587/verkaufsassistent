@@ -1,4 +1,4 @@
-const CACHE='va1';
+const CACHE='va2';
 const FILES=['./','./index.html','./manifest.json'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(FILES.map(f=>c.add(f).catch(()=>{})))));

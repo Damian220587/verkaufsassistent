@@ -7,7 +7,9 @@ in wenigen Klicks einstellen.
 
 ## Funktionen
 
-- 📸 Bis zu 5 Produktfotos (Kamera oder Galerie), automatisch verkleinert
+- 📸 Bis zu 10 Produktfotos (Kamera oder Galerie), automatisch verkleinert für die KI
+- 💾 Original-Fotos werden pro Anzeige gespeichert (IndexedDB) – per „Fotos teilen"
+  in die Galerie sichern oder direkt an die Kleinanzeigen-App senden
 - 🤖 Claude KI erkennt Produkt, Marke, Zustand und erstellt ehrliche Anzeigentexte
 - ⚠️ Zeigt an, was die KI **nicht** sicher erkennen konnte – zum Gegenprüfen
 - 💶 Unverbindlicher KI-Preisvorschlag
